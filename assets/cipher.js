@@ -1,9 +1,9 @@
 /* Bubu cipher: browser port of exmaple/bubu_cipher.py.
  *
- * v1 (classic): letter pairs -> CV / CCV syllables. Every word keeps its script:
- *   Russian words become Cyrillic syllables, English words become Latin ones.
- * v2 (cute): soft syllables with tails (пан, бум, пиу, мяу), Russian only,
- *   with optional easy clusters and song-like rhythm.
+ * Languages are detected per word: Cyrillic -> Russian, Latin -> English.
+ * v1 (classic): letter pairs -> CV / CCV syllables.
+ * v2 (cute): soft syllables with tails (пан, мяу / pan, piu), with optional
+ *   easy clusters and song-like rhythm.
  *
  * encode() produces exactly the same output as the Python script.
  * decode() is strict: instead of silently dropping what it cannot read,
@@ -16,20 +16,70 @@
   const mod = (a, n) => ((a % n) + n) % n;
   const isUpper = (ch) => ch !== ch.toLowerCase();
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  const isSep = (ch) => ch === " " || ch === "-";
+
+  const CAP = "^"; // internal v2 marker: next letter is uppercase
+
+  function freqMap(symbols, weights) {
+    const list = [...symbols];
+    return { symbols: list, weight: new Map(list.map((ch, i) => [ch, weights[i]])) };
+  }
+
+  function lang(id, spec) {
+    return {
+      id,
+      ...spec,
+      end: spec.abc.length, // v1 padding marker for odd-length words
+      abcIndex: indexMap(spec.abc),
+      consIndex: indexMap(spec.cons),
+      vowsIndex: indexMap(spec.vows),
+      bad: new Set(spec.bad),
+      cute: new Set(spec.ons2.join("") + spec.vow + spec.tail.join("")), // all letters of v2 output
+    };
+  }
+
+  // Order matters: it is the capture group order of the word regexes below.
+  const LANGS = [
+    lang("ru", {
+      letters: "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+      // v1: letters by frequency, 16 consonants, 8 vowels
+      abc: "оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё", cons: "пткбдгмнлрсзшхвф", vows: "аоуиеыяю",
+      // v2: soft onsets (cutest first), onsets with clusters, vowels, tails, banned vowel+tail
+      ons1: [..."пмбтлндкрв"],
+      ons2: ["п", "пр", "м", "б", "бр", "т", "тр", "л", "кл", "н", "д", "пл", "к", "р", "в"],
+      vow: "аиуояю", tail: ["", "у", "н", "м", "й"], bad: ["уу", "юу"],
+      freq: freqMap(" оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё-" + CAP, [
+        200, 110, 85, 80, 74, 67, 63, 55, 47, 45, 44, 35, 32, 30, 28, 26, 20, 19,
+        17, 17, 16, 16, 14, 12, 10, 9, 7, 6, 5, 4, 3, 3, 1, 1, 2, 3]),
+    }),
+    lang("en", {
+      letters: "abcdefghijklmnopqrstuvwxyz",
+      abc: "etaoinshrdlcumwfgypbvkjxqz", cons: "ptkbdgmnlrszfvhw", vows: "aeiouy",
+      ons1: [..."pmbtlndkrw"],
+      ons2: ["p", "pr", "m", "b", "br", "t", "tr", "l", "bl", "n", "d", "pl", "k", "r", "w"],
+      vow: "aiuoe", tail: ["", "u", "n", "m", "y"], bad: ["uu"],
+      freq: freqMap(" etaoinshrdlcumwfgypbvkjxqz-" + CAP, [
+        200, 127, 91, 82, 75, 70, 67, 63, 61, 60, 43, 40, 28, 28, 24, 24, 22, 20,
+        20, 19, 15, 10, 8, 2, 2, 1, 1, 2, 3]),
+    }),
+  ];
+
+  // One capture group per language; rhythm mode also joins words by single " " or "-".
+  const WORDS = /([А-Яа-яЁё]+)|([A-Za-z]+)/g;
+  const PHRASES = /([А-Яа-яЁё]+(?:[ -][А-Яа-яЁё]+)*)|([A-Za-z]+(?:[ -][A-Za-z]+)*)/g;
+  const langOf = (groups) => LANGS[groups.findIndex((g) => g !== undefined)];
 
   // ---------- key ----------
 
-  const KEY_RU = indexMap("абвгдеёжзийклмнопрстуфхцчшщъыьэюя");
-  const KEY_EN = indexMap("abcdefghijklmnopqrstuvwxyz");
+  const KEY = new Map([...indexMap(LANGS[1].letters), ...indexMap(LANGS[0].letters)]);
 
-  // "" -> no key, integer -> Caesar, word -> Vigenere (а/a = 0, б/b = 1, ...).
-  // v1 takes Russian and English letters, v2 only Russian ones. Returns null when invalid.
-  function parseKey(raw, version = 1) {
+  // "" -> no key, integer -> Caesar, word of Russian/English letters -> Vigenere
+  // (а/a = 0, б/b = 1, ...). Returns null when the key is neither.
+  function parseKey(raw) {
     const s = String(raw).trim();
     if (s === "") return { kind: "none", values: [0n] };
     if (/^[+-]?\d+$/.test(s)) return { kind: "caesar", values: [BigInt(s)], label: s };
-    const values = [...s.toLowerCase()].map((ch) =>
-      KEY_RU.has(ch) ? KEY_RU.get(ch) : version === 1 ? KEY_EN.get(ch) : undefined);
+    const values = [...s.toLowerCase()].map((ch) => KEY.get(ch));
     if (values.some((v) => v === undefined)) return null;
     return { kind: "vigenere", values: values.map(BigInt), label: s };
   }
@@ -44,30 +94,9 @@
   //  v1: classic
   // =====================================================================
 
-  function lang(abc, cons, vows) {
-    return {
-      abc,               // letters sorted by frequency
-      end: abc.length,   // padding marker for odd-length words
-      cons,              // 16 consonants
-      vows,              // vowels
-      abcIndex: indexMap(abc),
-      consIndex: indexMap(cons),
-      vowsIndex: indexMap(vows),
-    };
-  }
-
-  const RU = lang("оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё", "пткбдгмнлрсзшхвф", "аоуиеыяю");
-  const EN = lang("etaoinshrdlcumwfgypbvkjxqz", "ptkbdgmnlrszwhvf", "aouiey"); // Latin counterparts
-  const WORD = /([А-Яа-яЁё]+)|[A-Za-z]+/g; // group 1 is set for Russian words
-
-  // Consonant in either case -> { lang, index }, for the shift layer.
+  // Lowercase consonant -> { L, index }, for the shift layer.
   const CONS = new Map();
-  for (const l of [RU, EN]) {
-    [...l.cons].forEach((c, i) => {
-      CONS.set(c, { lang: l, index: i });
-      CONS.set(c.toUpperCase(), { lang: l, index: i });
-    });
-  }
+  for (const L of LANGS) [...L.cons].forEach((c, index) => CONS.set(c, { L, index }));
 
   function pairToN(a, b) {
     // "square shells": pairs of frequent letters get small numbers -> short syllables
@@ -83,65 +112,67 @@
     return r <= m ? [m, r] : [r - m - 1, m];
   }
 
-  function syl(n, l) {
-    // below |C|*|V| -> CV (2 chars), above -> CCV (3 chars)
-    const nc = l.cons.length;
-    const nv = l.vows.length;
-    if (n < nc * nv) return l.cons[Math.floor(n / nv)] + l.vows[n % nv];
+  function syl(n, L) {
+    // small n -> CV (2 chars), the rest -> CCV (3 chars)
+    const nc = L.cons.length;
+    const nv = L.vows.length;
+    if (n < nc * nv) return L.cons[Math.floor(n / nv)] + L.vows[n % nv];
     n -= nc * nv;
-    return l.cons[Math.floor(n / (nc * nv))] + l.cons[Math.floor(n / nv) % nc] + l.vows[n % nv];
+    return L.cons[Math.floor(n / (nc * nv))] + L.cons[Math.floor(n / nv) % nc] + L.vows[n % nv];
   }
 
-  function unsyl(s, l) {
-    const nv = l.vows.length;
-    const n = l.consIndex.get(s[s.length - 2]) * nv + l.vowsIndex.get(s[s.length - 1]);
-    return s.length === 2 ? n : l.cons.length * nv * (1 + l.consIndex.get(s[0])) + n;
+  function unsyl(s, L) {
+    const nv = L.vows.length;
+    const n = L.consIndex.get(s[s.length - 2]) * nv + L.vowsIndex.get(s[s.length - 1]);
+    return s.length === 2 ? n : L.cons.length * nv * (1 + L.consIndex.get(s[0])) + n;
   }
 
-  function v1EncWord(w, l) {
-    const idx = [...w.toLowerCase()].map((ch) => l.abcIndex.get(ch));
-    idx.push(l.end);
+  function v1EncWord(w, L) {
+    const idx = [...w.toLowerCase()].map((ch) => L.abcIndex.get(ch));
+    idx.push(L.end);
     let out = "";
-    for (let i = 0; i + 1 < idx.length; i += 2) out += syl(pairToN(idx[i], idx[i + 1]), l);
+    for (let i = 0; i + 1 < idx.length; i += 2) out += syl(pairToN(idx[i], idx[i + 1]), L);
     return isUpper(w[0]) ? capitalize(out) : out;
   }
 
   // Returns { text } or { error: { code, at, length } } with `at` relative to the word.
-  function v1DecWord(w, l) {
+  function v1DecWord(w, L) {
     const lo = w.toLowerCase();
     const fail = (code, at, length = 1) => ({ error: { code, at, length } });
     let out = "";
     let i = 0;
     while (i < lo.length) {
       const start = i;
-      while (i < lo.length && l.consIndex.has(lo[i])) i++;
+      while (i < lo.length && L.consIndex.has(lo[i])) i++;
       const consonants = i - start;
 
       if (i === lo.length) return fail("tail", start, consonants);
-      if (!l.vowsIndex.has(lo[i])) return fail("letter", i);
+      if (!L.vowsIndex.has(lo[i])) return fail("letter", i);
       if (consonants === 0) return fail("vowel", i);
       if (consonants > 2) return fail("cluster", start, consonants);
 
       i++;
-      const [a, b] = nToPair(unsyl(lo.slice(start, i), l));
-      if (a >= l.end || b > l.end) return fail("range", start, i - start);
-      if (b === l.end && i < lo.length) return fail("marker", start, i - start);
-      out += l.abc[a] + (b < l.end ? l.abc[b] : "");
+      const [a, b] = nToPair(unsyl(lo.slice(start, i), L));
+      if (a >= L.end || b > L.end) return fail("range", start, i - start);
+      if (b === L.end && i < lo.length) return fail("marker", start, i - start);
+      out += L.abc[a] + (b < L.end ? L.abc[b] : "");
     }
     return { text: isUpper(w[0]) ? capitalize(out) : out };
   }
 
-  // Caesar / Vigenere on consonants over the whole text.
+  // Caesar / Vigenere on consonants over the whole text. Like the script, any
+  // character whose lowercase form is a consonant counts (even the Kelvin sign).
   function v1Shift(text, shifts, sign) {
     let i = 0;
     let out = "";
     for (const ch of text) {
-      const c = CONS.get(ch);
+      const lo = ch.toLowerCase();
+      const c = lo.length === 1 ? CONS.get(lo) : undefined;
       if (!c) {
         out += ch;
         continue;
       }
-      const moved = c.lang.cons[mod(c.index + sign * shifts[i % shifts.length], c.lang.cons.length)];
+      const moved = c.L.cons[mod(c.index + sign * shifts[i % shifts.length], c.L.cons.length)];
       out += isUpper(ch) ? moved.toUpperCase() : moved;
       i++;
     }
@@ -149,12 +180,13 @@
   }
 
   function v1Encode(text, { key }) {
-    return v1Shift(text.replace(WORD, (w, ru) => v1EncWord(w, ru ? RU : EN)), shiftsMod(key, 16), +1);
+    const words = text.replace(WORDS, (w, ...groups) => v1EncWord(w, langOf(groups.slice(0, 2))));
+    return v1Shift(words, shiftsMod(key, 16), +1);
   }
 
   function v1Decode(text, { key }) {
     const plain = v1Shift(text, shiftsMod(key, 16), -1);
-    return decodeWords(plain, WORD, (w, ru) => v1DecWord(w, ru ? RU : EN));
+    return decodeWords(plain, WORDS, (w, L) => v1DecWord(w, L));
   }
 
   // =====================================================================
@@ -165,37 +197,22 @@
   //  remainder uses 1 or 2 syllables.
   // =====================================================================
 
-  const CAP = "^"; // internal marker: next letter is uppercase
-  const ONS1 = ["п", "м", "б", "т", "л", "н", "д", "к", "р", "в"]; // soft single onsets, cutest first
-  const ONS2 = ["п", "пр", "м", "б", "бр", "т", "тр", "л", "кл", "н", "д", "пл", "к", "р", "в"];
-  const VOW = "аиуояю";
-  const TAIL = ["", "у", "н", "м", "й"]; // optional syllable tails
-  const FREQ_SYMBOLS = [..." оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё-" + CAP];
-  const FREQ = new Map(FREQ_SYMBOLS.map((ch, i) => [ch, [
-    200, 110, 85, 80, 74, 67, 63, 55, 47, 45, 44, 35, 32, 30, 28, 26, 20, 19,
-    17, 17, 16, 16, 14, 12, 10, 9, 7, 6, 5, 4, 3, 3, 1, 1, 2, 3][i]]));
-  const CUTE = new Set(ONS1.join("") + VOW + TAIL.join("")); // all letters of cute output
   const RHYTHM = [2, 3, 1, 2, 2, 3]; // syllables per chunk in rhythm mode
-  const SEG_W = /[А-Яа-яЁё]+/g; // segment = one word
-  const SEG_R = /[А-Яа-яЁё]+(?:[ -][А-Яа-яЁё]+)*/g; // segment = words with spaces
-  const isSep = (ch) => ch === " " || ch === "-";
-
-  const sylKey = (o, v, t) => (o * VOW.length + v) * TAIL.length + t;
   const tableCache = new Map();
 
-  function tables(clusters, rhythm) {
-    const id = (clusters ? 2 : 0) + (rhythm ? 1 : 0);
+  function tables(L, clusters, rhythm) {
+    const id = `${L.id}${+clusters}${+rhythm}`;
     if (tableCache.has(id)) return tableCache.get(id);
 
-    const ons = clusters ? ONS2 : ONS1;
+    const ons = clusters ? L.ons2 : L.ons1;
     // cost: a cluster counts as half an extra letter, so clusters show up often enough
-    const cost = ([o, , t]) => 0.5 + 0.5 * ons[o].length + TAIL[t].length;
+    const cost = ([o, , t]) => 0.5 + 0.5 * ons[o].length + L.tail[t].length;
 
     const combos = [];
     for (let o = 0; o < ons.length; o++) {
-      for (let v = 0; v < VOW.length; v++) {
-        for (let t = 0; t < TAIL.length; t++) {
-          if (!("ую".includes(VOW[v]) && TAIL[t] === "у")) combos.push([o, v, t]); // no "пуу", "мюу"
+      for (let v = 0; v < L.vow.length; v++) {
+        for (let t = 0; t < L.tail.length; t++) {
+          if (!L.bad.has(L.vow[v] + L.tail[t])) combos.push([o, v, t]); // no "пуу", "puu"
         }
       }
     }
@@ -208,9 +225,9 @@
     const costs = syls.map(cost);
 
     // symbols: letters + CAP (+ space and hyphen in rhythm mode, where words are merged)
-    const alpha = FREQ_SYMBOLS.filter((ch) => rhythm || !isSep(ch));
-    const total = alpha.reduce((sum, ch) => sum + FREQ.get(ch), 0);
-    const p = alpha.map((ch) => FREQ.get(ch) / total);
+    const alpha = L.freq.symbols.filter((ch) => rhythm || !isSep(ch));
+    const total = alpha.reduce((sum, ch) => sum + L.freq.weight.get(ch), 0);
+    const p = alpha.map((ch) => L.freq.weight.get(ch) / total);
     const q = rhythm ? 0.05 : 0.2; // rough weight of a 2-symbol remainder
     const units = [];
     const weights = [];
@@ -244,15 +261,20 @@
     });
 
     const singles = alpha.map((ch, i) => ({ ch, i }))
-      .sort((x, y) => FREQ.get(y.ch) - FREQ.get(x.ch) || x.i - y.i)
+      .sort((x, y) => L.freq.weight.get(y.ch) - L.freq.weight.get(x.ch) || x.i - y.i)
       .map((d) => d.ch);
 
+    const sylKey = (o, v, t) => (o * L.vow.length + v) * L.tail.length + t;
     const T = {
+      L,
       ons,
       onsIndex: new Map(ons.map((o, i) => [o, i])),
       onsLongestFirst: ons.map((o, i) => ({ o, i })).sort((x, y) => y.o.length - x.o.length || x.i - y.i).map((d) => d.o),
+      vowelTails: new Set(L.tail.filter((t) => t && L.vow.includes(t))),    // always a tail
+      consonantTails: new Set(L.tail.filter((t) => t && !L.vow.includes(t))), // not before a vowel
       syls,
-      text: syls.map(([o, v, t]) => ons[o] + VOW[v] + TAIL[t]),
+      text: syls.map(([o, v, t]) => ons[o] + L.vow[v] + L.tail[t]),
+      sylKey,
       idx: new Map(syls.map(([o, v, t], i) => [sylKey(o, v, t), i])),
       enc,
       dec,
@@ -274,56 +296,52 @@
     return out;
   }
 
-  function v2Encode(text, { key, clusters, rhythm }) {
-    const T = tables(!!clusters, !!rhythm);
+  function v2EncSeg(seg, T, ks, counter, rhythm) {
     const S = T.syls.length;
     const n = T.ons.length;
-    const ks = shiftsMod(key, n);
-    let k = 0; // the key runs on across the whole text
-
-    return text.replace(rhythm ? SEG_R : SEG_W, (seg) => {
-      // first capital is shown by output case, the others are coded with CAP
-      const sym = [];
-      [...seg].forEach((ch, i) => {
-        if (i && isUpper(ch)) sym.push(CAP);
-        sym.push(ch.toLowerCase());
-      });
-      const ids = [];
-      for (let i = 0; i < sym.length; i += 3) {
-        const g = sym.slice(i, i + 3);
-        if (g.length === 1) {
-          ids.push(T.singlesIndex.get(g[0]));
-        } else {
-          const pair = T.enc.get(g.join(""));
-          ids.push(Math.floor(pair / S), pair % S);
-        }
-      }
-      const parts = ids.map((id) => {
-        const [o, v, t] = T.syls[id];
-        return T.text[T.idx.get(sylKey(mod(o + ks[k++ % ks.length], n), v, t))];
-      });
-      const out = rhythm ? rhythmJoin(parts) : parts.join("");
-      return isUpper(seg[0]) ? capitalize(out) : out;
+    // first capital is shown by output case, the others are coded with CAP
+    const sym = [];
+    [...seg].forEach((ch, i) => {
+      if (i && isUpper(ch)) sym.push(CAP);
+      sym.push(ch.toLowerCase());
     });
+    const ids = [];
+    for (let i = 0; i < sym.length; i += 3) {
+      const g = sym.slice(i, i + 3);
+      if (g.length === 1) {
+        ids.push(T.singlesIndex.get(g[0]));
+      } else {
+        const pair = T.enc.get(g.join(""));
+        ids.push(Math.floor(pair / S), pair % S);
+      }
+    }
+    const parts = ids.map((id) => {
+      const [o, v, t] = T.syls[id];
+      return T.text[T.idx.get(T.sylKey(mod(o + ks[counter.k++ % ks.length], n), v, t))];
+    });
+    const out = rhythm ? rhythmJoin(parts) : parts.join("");
+    return isUpper(seg[0]) ? capitalize(out) : out;
   }
 
   // Mirrors the script's syllable regex at position p: onset (longest first) + vowel
-  // + optional tail, where н/м/й only count as a tail when no vowel follows.
+  // + optional tail, where a consonant tail only counts when no vowel follows.
   function matchSyllable(s, p, T) {
+    const vow = T.L.vow;
     for (const on of T.onsLongestFirst) {
       const v = s[p + on.length];
-      if (!s.startsWith(on, p) || v === undefined || !VOW.includes(v)) continue;
+      if (!s.startsWith(on, p) || v === undefined || !vow.includes(v)) continue;
       const q = p + on.length + 1;
       const c = s[q];
       let tail = "";
-      if (c === "у") tail = c;
-      else if ((c === "н" || c === "м" || c === "й") && !(s[q + 1] && VOW.includes(s[q + 1]))) tail = c;
-      return { o: T.onsIndex.get(on), v: VOW.indexOf(v), t: TAIL.indexOf(tail), from: p, to: q + tail.length };
+      if (T.vowelTails.has(c)) tail = c;
+      else if (T.consonantTails.has(c) && !(s[q + 1] && vow.includes(s[q + 1]))) tail = c;
+      return { o: T.onsIndex.get(on), v: vow.indexOf(v), t: T.L.tail.indexOf(tail), from: p, to: q + tail.length };
     }
     return null;
   }
 
   function v2DecRun(run, T, ks, counter) {
+    const L = T.L;
     // letters without the rhythm separators, with their positions in the run
     const pos = [];
     let s = "";
@@ -335,13 +353,13 @@
     const fail = (code, from, to = from + 1) =>
       ({ error: { code, at: pos[from], length: pos[to - 1] + 1 - pos[from] } });
 
-    for (let j = 0; j < s.length; j++) if (!CUTE.has(s[j])) return fail("letter", j);
+    for (let j = 0; j < s.length; j++) if (!L.cute.has(s[j])) return fail("letter", j);
 
     const found = [];
     for (let p = 0; p < s.length;) {
       const m = matchSyllable(s, p, T);
       if (!m) {
-        if (VOW.includes(s[p])) return fail("vowel", p);
+        if (L.vow.includes(s[p])) return fail("vowel", p);
         if (p + 1 === s.length) return fail("end", p);
         return fail("syllable", p, p + 2);
       }
@@ -353,7 +371,7 @@
     const S = T.syls.length;
     const ids = [];
     for (const m of found) {
-      const id = T.idx.get(sylKey(mod(m.o - ks[counter.k++ % ks.length], n), m.v, m.t));
+      const id = T.idx.get(T.sylKey(mod(m.o - ks[counter.k++ % ks.length], n), m.v, m.t));
       if (id === undefined) return fail("syllable", m.from, m.to); // e.g. "пуу"
       ids.push(id);
     }
@@ -397,25 +415,32 @@
     return { text: isUpper(run[0]) ? out.charAt(0).toUpperCase() + out.slice(1) : out };
   }
 
+  function v2Encode(text, { key, clusters, rhythm }) {
+    const counter = { k: 0 }; // the key runs on across the whole text, both languages
+    return text.replace(rhythm ? PHRASES : WORDS, (seg, ...groups) => {
+      const T = tables(langOf(groups.slice(0, 2)), !!clusters, !!rhythm);
+      return v2EncSeg(seg, T, shiftsMod(key, T.ons.length), counter, rhythm);
+    });
+  }
+
   function v2Decode(text, { key, clusters, rhythm }) {
-    const T = tables(!!clusters, !!rhythm);
-    const ks = shiftsMod(key, T.ons.length);
     const counter = { k: 0 };
-    return decodeWords(text, rhythm ? SEG_R : SEG_W, (run) => v2DecRun(run, T, ks, counter));
+    return decodeWords(text, rhythm ? PHRASES : WORDS, (run, L) => {
+      const T = tables(L, !!clusters, !!rhythm);
+      return v2DecRun(run, T, shiftsMod(key, T.ons.length), counter);
+    });
   }
 
   // ---------- shared ----------
 
-  // Decodes every match of `re` with decWord(match, ...groups) and stops at the first error.
-  // Returns { text } or { error: { code, index, length, wordIndex, wordLength } },
-  // with indices pointing into `text`.
+  // Decodes every match of `re` (one capture group per language) with decWord(match, lang)
+  // and stops at the first error. Returns { text } or
+  // { error: { code, index, length, wordIndex, wordLength } }, indices pointing into `text`.
   function decodeWords(text, re, decWord) {
     let error = null;
-    const out = text.replace(re, (...args) => {
-      const w = args[0];
-      const offset = args[args.length - 2];
+    const out = text.replace(re, (w, g1, g2, offset) => {
       if (error) return w;
-      const r = decWord(...args.slice(0, -2));
+      const r = decWord(w, langOf([g1, g2]));
       if (!r.error) return r.text;
       error = {
         code: r.error.code,

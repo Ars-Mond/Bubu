@@ -17,17 +17,16 @@
       keyCaesar: (k) => `caesar ${k}`,
       keyVigenere: (n) => `vigenère · ${n}`,
       keyBad: "invalid",
-      keyInvalid: "The key must be a number (Caesar shift) or a word made of Russian or English letters.",
-      keyInvalidV2: "In version 2 the key must be a number or a word made of Russian letters.",
+      keyInvalid: "The key must be a number (shift) or a word made of Russian or English letters.",
       version: "Version",
-      v1Title: "Version 1 — classic: letter pairs → syllables. Russian and English.",
-      v2Title: "Version 2 — cute: soft syllables with tails. Russian only.",
+      v1Title: "Version 1 — classic: letter pairs → syllables.",
+      v2Title: "Version 2 — cute: soft syllables with tails.",
       clusters: "Clusters",
-      clustersTitle: "Add easy clusters: пр, бр, тр, кл, пл",
+      clustersTitle: "Add easy clusters: пр, бр, тр, кл, пл / pr, br, tr, bl, pl",
       rhythm: "Rhythm",
       rhythmTitle: "Chunks of 2–3 syllables, like a song",
-      hint1: "classic · Russian and English",
-      hint2: "cute · Russian only: пан, бум, пиу, мяу",
+      hint1: "classic · letter pairs → syllables",
+      hint2: "cute · пан, мяу / pan, piu",
       plainTitle: "Text",
       cipherTitle: "Cipher",
       clear: "Clear",
@@ -41,10 +40,10 @@
       privacy: "Everything runs in your browser. The text never leaves this page.",
       howTitle: "How it works",
       how1: "Version 1 (classic): a word is split into letter pairs, each pair gets a number, and the number becomes a “consonant + vowel” or “two consonants + vowel” syllable. Common pairs get short syllables. English words turn into Latin syllables.",
-      how2: "Version 2 (cute): soft syllables with tails — пан, бум, пиу, мяу. Every three symbols become two syllables, common triples the shortest ones. Capital letters are preserved. Russian text only.",
-      how3: "“Clusters” adds easy clusters пр, бр, тр, кл, пл. “Rhythm” encodes spaces together with the words and splits the result into chunks of 2–3 syllables, like a song.",
-      how4: "Optional key: a number is a shift, a word is a Vigenère key (а = 0, б = 1, …). In version 1 the key word can also be English.",
-      how5: "Decrypting needs the same version, switches and key. Russian text is encoded exactly like the bubu_cipher.py script does.",
+      how2: "Version 2 (cute): soft syllables with tails — пан, бум, пиу, мяу. Every three symbols become two syllables, common triples the shortest ones. Capital letters are preserved. English words get their own syllables: pan, piu.",
+      how3: "“Clusters” adds easy clusters: пр, бр, тр, кл, пл and pr, br, tr, bl, pl. “Rhythm” encodes spaces together with the words and splits the result into chunks of 2–3 syllables, like a song.",
+      how4: "Optional key: a number is a shift, a word of Russian or English letters is a Vigenère key (а = 0, б = 1, …; a = 0, b = 1, …).",
+      how5: "Decrypting needs the same version, switches and key. The result matches the bubu_cipher.py script exactly.",
       failed: "Could not decrypt.",
       whereChar: (c) => `Character ${c}`,
       whereLine: (l, c) => `Line ${l}, character ${c}`,
@@ -81,17 +80,16 @@
       keyCaesar: (k) => `цезарь ${k}`,
       keyVigenere: (n) => `виженер · ${n}`,
       keyBad: "ошибка",
-      keyInvalid: "Ключ должен быть числом (сдвиг Цезаря) или словом из русских или английских букв.",
-      keyInvalidV2: "В версии 2 ключ должен быть числом или словом из русских букв.",
+      keyInvalid: "Ключ должен быть числом (сдвиг) или словом из русских или английских букв.",
       version: "Версия",
-      v1Title: "Версия 1 — классика: пары букв → слоги. Русский и английский.",
-      v2Title: "Версия 2 — милота: мягкие слоги с хвостиками. Только русский.",
+      v1Title: "Версия 1 — классика: пары букв → слоги.",
+      v2Title: "Версия 2 — милота: мягкие слоги с хвостиками.",
       clusters: "Сочетания",
-      clustersTitle: "Добавить лёгкие сочетания: пр, бр, тр, кл, пл",
+      clustersTitle: "Добавить лёгкие сочетания: пр, бр, тр, кл, пл / pr, br, tr, bl, pl",
       rhythm: "Ритм",
       rhythmTitle: "Куски по 2–3 слога, как в песне",
-      hint1: "классика · русский и английский",
-      hint2: "милота · только русский: пан, бум, пиу, мяу",
+      hint1: "классика · пары букв → слоги",
+      hint2: "милота · пан, мяу / pan, piu",
       plainTitle: "Текст",
       cipherTitle: "Шифр",
       clear: "Очистить",
@@ -105,10 +103,10 @@
       privacy: "Всё считается прямо в браузере — текст никуда не отправляется.",
       howTitle: "Как это работает",
       how1: "Версия 1 (классика): слово делится на пары букв, каждая пара получает номер, а номер становится слогом «согласная + гласная» или «две согласные + гласная». Частые пары — короткие слоги. Английские слова превращаются в латинские слоги.",
-      how2: "Версия 2 (милота): мягкие слоги с хвостиками — пан, бум, пиу, мяу. Каждые три символа становятся двумя слогами, частые тройки — самыми короткими. Заглавные буквы сохраняются. Только русский текст.",
-      how3: "«Сочетания» добавляют лёгкие сочетания пр, бр, тр, кл, пл. «Ритм» шифрует пробелы вместе со словами и разбивает результат на куски по 2–3 слога, как песню.",
-      how4: "Необязательный ключ: число — это сдвиг, слово — ключ Виженера (а = 0, б = 1, …). В версии 1 ключ-слово может быть и английским.",
-      how5: "Для расшифровки нужны те же версия, переключатели и ключ. Русский текст шифруется точно так же, как скриптом bubu_cipher.py.",
+      how2: "Версия 2 (милота): мягкие слоги с хвостиками — пан, бум, пиу, мяу. Каждые три символа становятся двумя слогами, частые тройки — самыми короткими. Заглавные буквы сохраняются. У английских слов свои слоги: pan, piu.",
+      how3: "«Сочетания» добавляют лёгкие сочетания: пр, бр, тр, кл, пл и pr, br, tr, bl, pl. «Ритм» шифрует пробелы вместе со словами и разбивает результат на куски по 2–3 слога, как песню.",
+      how4: "Необязательный ключ: число — это сдвиг, слово из русских или английских букв — ключ Виженера (а = 0, б = 1, …; a = 0, b = 1, …).",
+      how5: "Для расшифровки нужны те же версия, переключатели и ключ. Результат полностью совпадает со скриптом bubu_cipher.py.",
       failed: "Не удалось расшифровать.",
       whereChar: (c) => `Символ ${c}`,
       whereLine: (l, c) => `Строка ${l}, символ ${c}`,
@@ -202,20 +200,19 @@
   function update() {
     const s = t();
     const src = input.value;
-    const key = Bubu.parseKey(keyInput.value, version);
+    const key = Bubu.parseKey(keyInput.value);
     renderKey(key);
 
-    // Placeholders double as a live example of the current settings; v2 is Russian only.
-    const sample = version === 2 ? STRINGS.ru.sample : s.sample;
-    const sampleCipher = Bubu.encode(sample, settings(key));
-    input.placeholder = mode === "enc" ? sample : sampleCipher;
-    output.placeholder = mode === "enc" ? sampleCipher : sample;
+    // Placeholders double as a live example of the current settings.
+    const sampleCipher = Bubu.encode(s.sample, settings(key));
+    input.placeholder = mode === "enc" ? s.sample : sampleCipher;
+    output.placeholder = mode === "enc" ? sampleCipher : s.sample;
 
     hasResult = false;
     if (!src) {
       output.value = "";
     } else if (!key) {
-      output.value = version === 2 ? s.keyInvalidV2 : s.keyInvalid;
+      output.value = s.keyInvalid;
     } else {
       const r = convert(src, key);
       output.value = r.text !== undefined ? r.text : r.message;
