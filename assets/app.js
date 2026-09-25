@@ -5,8 +5,9 @@
     en: {
       title: "Bubu cipher",
       logo: "BUBU",
-      kicker: "joke cipher for Russian text",
-      tagline: "Turns Russian text into pronounceable gibberish and back.",
+      kicker: "joke cipher for Russian and English",
+      tagline: "Turns Russian and English text into pronounceable gibberish and back.",
+      sample: "Hello, world!",
       modeLabel: "Mode",
       encrypt: "Encrypt",
       decrypt: "Decrypt",
@@ -16,7 +17,7 @@
       keyCaesar: (k) => `caesar ${k}`,
       keyVigenere: (n) => `vigenère · ${n}`,
       keyBad: "invalid",
-      keyInvalid: "The key must be a number (Caesar shift) or a word made of Russian letters.",
+      keyInvalid: "The key must be a number (Caesar shift) or a word made of Russian or English letters.",
       plainTitle: "Text",
       cipherTitle: "Cipher",
       clear: "Clear",
@@ -31,8 +32,9 @@
       howTitle: "How it works",
       how1: "Each word is split into letter pairs. Letters are ranked by frequency, so pairs of common letters get small numbers.",
       how2: "Every number becomes a syllable: consonant + vowel, or two consonants + vowel for larger numbers.",
-      how3: "The optional key shifts consonants: a number is a Caesar shift, a word is a Vigenère key (а = 0, б = 1, …).",
-      how4: "Output is fully compatible with the bubu_cipher.py script.",
+      how3: "Each word keeps its script: Russian words turn into Cyrillic syllables, English words into Latin ones. Each language has its own letter frequencies.",
+      how4: "The optional key shifts consonants: a number is a Caesar shift, a word is a Vigenère key (a = 0, b = 1, …; а = 0, б = 1, …).",
+      how5: "Output is fully compatible with the bubu_cipher.py script.",
       failed: "Could not decrypt.",
       whereChar: (c) => `Character ${c}`,
       whereLine: (l, c) => `Line ${l}, character ${c}`,
@@ -50,8 +52,9 @@
     ru: {
       title: "Бубу — шуточный шифр",
       logo: "БУБУ",
-      kicker: "шуточный шифр для русского текста",
-      tagline: "Превращает русский текст в произносимую абракадабру и обратно.",
+      kicker: "шуточный шифр для русского и английского",
+      tagline: "Превращает русский и английский текст в произносимую абракадабру и обратно.",
+      sample: "Привет, мир!",
       modeLabel: "Режим",
       encrypt: "Зашифровать",
       decrypt: "Расшифровать",
@@ -61,7 +64,7 @@
       keyCaesar: (k) => `цезарь ${k}`,
       keyVigenere: (n) => `виженер · ${n}`,
       keyBad: "ошибка",
-      keyInvalid: "Ключ должен быть числом (сдвиг Цезаря) или словом из русских букв.",
+      keyInvalid: "Ключ должен быть числом (сдвиг Цезаря) или словом из русских или английских букв.",
       plainTitle: "Текст",
       cipherTitle: "Шифр",
       clear: "Очистить",
@@ -76,8 +79,9 @@
       howTitle: "Как это работает",
       how1: "Слово делится на пары букв. Буквы упорядочены по частоте, поэтому пары частых букв получают маленькие номера.",
       how2: "Каждый номер превращается в слог: согласная + гласная, а для больших номеров — две согласные + гласная.",
-      how3: "Необязательный ключ сдвигает согласные: число — это сдвиг Цезаря, слово — ключ Виженера (а = 0, б = 1, …).",
-      how4: "Результат полностью совместим со скриптом bubu_cipher.py.",
+      how3: "Каждое слово остаётся в своём алфавите: русские слова превращаются в кириллические слоги, английские — в латинские. У каждого языка своя таблица частот.",
+      how4: "Необязательный ключ сдвигает согласные: число — это сдвиг Цезаря, слово — ключ Виженера (а = 0, б = 1, …; a = 0, b = 1, …).",
+      how5: "Результат полностью совместим со скриптом bubu_cipher.py.",
       failed: "Не удалось расшифровать.",
       whereChar: (c) => `Символ ${c}`,
       whereLine: (l, c) => `Строка ${l}, символ ${c}`,
@@ -93,8 +97,6 @@
       checkKey: "Проверьте ключ.",
     },
   };
-
-  const SAMPLE = "Привет, мир!";
 
   const $ = (id) => document.getElementById(id);
   const input = $("input");
@@ -164,9 +166,9 @@
 
     // Placeholders double as a live example of the current mode and key.
     const shifts = key ? key.shifts : [0];
-    const sampleCipher = Bubu.encode(SAMPLE, shifts);
-    input.placeholder = mode === "enc" ? SAMPLE : sampleCipher;
-    output.placeholder = mode === "enc" ? sampleCipher : SAMPLE;
+    const sampleCipher = Bubu.encode(s.sample, shifts);
+    input.placeholder = mode === "enc" ? s.sample : sampleCipher;
+    output.placeholder = mode === "enc" ? sampleCipher : s.sample;
 
     hasResult = false;
     if (!src) {

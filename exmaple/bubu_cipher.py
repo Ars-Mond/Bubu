@@ -3,7 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Bubu cipher: turns Russian text into pronounceable gibberish syllables.
+"""Bubu cipher: turns Russian and English text into pronounceable gibberish syllables.
+
+Every word keeps its script: Russian words become Cyrillic syllables,
+English words become Latin ones.
 
 Modes:
   plain     - letter pairs -> syllables
@@ -14,12 +17,31 @@ import argparse
 import re
 import sys
 from math import isqrt
+from typing import NamedTuple
 
-ABC = "оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё"  # Russian letters sorted by frequency
-END = len(ABC)                               # padding marker for odd-length words
-C, V = "пткбдгмнлрсзшхвф", "аоуиеыяю"        # 16 consonants, 8 vowels
-RU = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"     # for turning a key word into shifts
-WORD = re.compile(r"[а-яё]+", re.I)
+
+class Lang(NamedTuple):
+    abc: str    # letters sorted by frequency; len(abc) is the padding marker for odd-length words
+    cons: str   # 16 consonants
+    vows: str   # vowels
+    order: str  # alphabet order, for turning a key word into shifts
+
+
+RU = Lang(
+    abc="оеаинтсрвлкмдпуяыьгзбчйхжшюцщэфъё",
+    cons="пткбдгмнлрсзшхвф",
+    vows="аоуиеыяю",
+    order="абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+)
+EN = Lang(
+    abc="etaoinshrdlcumwfgypbvkjxqz",
+    cons="ptkbdgmnlrszwhvf",  # Latin counterparts of the Russian consonants
+    vows="aouiey",
+    order="abcdefghijklmnopqrstuvwxyz",
+)
+WORD = re.compile(r"([А-Яа-яЁё]+)|[A-Za-z]+")  # group 1 is set for Russian words
+# consonant in either case -> (language, index), for the shift layer
+CONS = {ch: (lang, i) for lang in (RU, EN) for i, c in enumerate(lang.cons) for ch in (c, c.upper())}
 
 
 # ---------- syllable layer ----------
@@ -36,51 +58,57 @@ def n_to_pair(n):
     return (m, r) if r <= m else (r - m - 1, m)
 
 
-def syl(n):
-    # 0..127 -> CV (2 chars), 128.. -> CCV (3 chars)
-    if n < 128:
-        return C[n // 8] + V[n % 8]
-    n -= 128
-    return C[n // 128] + C[n // 8 % 16] + V[n % 8]
+def syl(n, lang):
+    # below |C|*|V| -> CV (2 chars), above -> CCV (3 chars)
+    c, v = lang.cons, lang.vows
+    cv = len(c) * len(v)
+    if n < cv:
+        return c[n // len(v)] + v[n % len(v)]
+    n -= cv
+    return c[n // cv] + c[n // len(v) % len(c)] + v[n % len(v)]
 
 
-def unsyl(s):
-    if len(s) == 2:
-        return C.index(s[0]) * 8 + V.index(s[1])
-    return 128 + C.index(s[0]) * 128 + C.index(s[1]) * 8 + V.index(s[2])
+def unsyl(s, lang):
+    c, v = lang.cons, lang.vows
+    n = c.index(s[-2]) * len(v) + v.index(s[-1])
+    return n if len(s) == 2 else len(c) * len(v) * (1 + c.index(s[0])) + n
+
+
+def _lang(m):
+    return RU if m.group(1) else EN
 
 
 def _enc_word(m):
-    w = m.group()
-    idx = [ABC.index(ch) for ch in w.lower()] + [END]
-    out = "".join(syl(pair_to_n(idx[i], idx[i + 1])) for i in range(0, len(idx) - 1, 2))
+    w, lang = m.group(), _lang(m)
+    idx = [lang.abc.index(ch) for ch in w.lower()] + [len(lang.abc)]
+    out = "".join(syl(pair_to_n(idx[i], idx[i + 1]), lang) for i in range(0, len(idx) - 1, 2))
     return out.capitalize() if w[0].isupper() else out
 
 
 def _dec_word(m):
-    w = m.group()
+    w, lang = m.group(), _lang(m)
     out = ""
-    for s in re.findall(f"[{C}]{{1,2}}[{V}]", w.lower()):
-        a, b = n_to_pair(unsyl(s))
-        out += ABC[a] + (ABC[b] if b < END else "")
+    for s in re.findall(f"[{lang.cons}]{{1,2}}[{lang.vows}]", w.lower()):
+        a, b = n_to_pair(unsyl(s, lang))
+        out += lang.abc[a] + (lang.abc[b] if b < len(lang.abc) else "")
     return out.capitalize() if w[0].isupper() else out
 
 
 # ---------- shift layer (Caesar / Vigenere on consonants) ----------
 
 def _shifts(key):
-    # int -> Caesar (one shift), str -> Vigenere (shift per key letter, а=0, б=1, ...)
+    # int -> Caesar (one shift), str -> Vigenere (shift per key letter, а/a=0, б/b=1, ...)
     if isinstance(key, int):
         return [key]
-    return [RU.index(ch) for ch in key.lower()]
+    return [(RU.order if ch in RU.order else EN.order).index(ch) for ch in key.lower()]
 
 
 def _shift(text, key, sign):
     ks, i, out = _shifts(key), 0, []
     for ch in text:
-        lo = ch.lower()
-        if lo in C:
-            lo = C[(C.index(lo) + sign * ks[i % len(ks)]) % len(C)]
+        if ch in CONS:
+            lang, j = CONS[ch]
+            lo = lang.cons[(j + sign * ks[i % len(ks)]) % len(lang.cons)]
             ch = lo.upper() if ch.isupper() else lo
             i += 1
         out.append(ch)
@@ -100,25 +128,26 @@ def decode(text, key=0):
 # ---------- CLI ----------
 
 def _key_word(s):
-    if not s or any(ch not in RU for ch in s.lower()):
-        raise argparse.ArgumentTypeError("key must contain only Russian letters")
+    if not s or any(ch not in RU.order + EN.order for ch in s.lower()):
+        raise argparse.ArgumentTypeError("key must contain only Russian or English letters")
     return s
 
 
 def main():
     p = argparse.ArgumentParser(
-        description="Bubu cipher: Russian text <-> pronounceable gibberish.",
+        description="Bubu cipher: Russian/English text <-> pronounceable gibberish.",
         epilog='examples:\n'
                '  uv run bubu_cipher.py enc "Привет, мир"\n'
+               '  uv run bubu_cipher.py enc "Hello, world"\n'
                '  uv run bubu_cipher.py enc -s 3 "Привет, мир"\n'
                '  uv run bubu_cipher.py dec -k фраза "Гнареша, ..."\n'
-               '  echo "текст" | uv run bubu_cipher.py enc -k фраза',
+               '  echo "текст" | uv run bubu_cipher.py enc -k secret',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("mode", choices=["enc", "dec"], help="enc = encode, dec = decode")
     g = p.add_mutually_exclusive_group()
     g.add_argument("-s", "--shift", type=int, help="Caesar shift for consonants")
-    g.add_argument("-k", "--key", type=_key_word, help="Vigenere key word, e.g. фраза")
+    g.add_argument("-k", "--key", type=_key_word, help="Vigenere key word, e.g. фраза or secret")
     p.add_argument("text", nargs="*", help="text to process (reads stdin if omitted)")
     a = p.parse_intermixed_args()  # allows options between mode and text
 
