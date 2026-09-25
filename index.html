@@ -42,10 +42,10 @@
     </header>
 
     <section class="controls">
-      <div class="mode" role="radiogroup" data-i18n-aria="modeLabel" aria-label="Mode">
-        <span class="mode-thumb" aria-hidden="true"></span>
-        <button type="button" role="radio" data-mode="enc" data-i18n="encrypt">Encrypt</button>
-        <button type="button" role="radio" data-mode="dec" data-i18n="decrypt">Decrypt</button>
+      <div class="seg mode" id="mode" role="radiogroup" data-i18n-aria="modeLabel" aria-label="Mode">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <button type="button" role="radio" data-value="enc" data-i18n="encrypt">Encrypt</button>
+        <button type="button" role="radio" data-value="dec" data-i18n="decrypt">Decrypt</button>
       </div>
 
       <label class="key">
@@ -54,6 +54,24 @@
                data-i18n-placeholder="keyPlaceholder" placeholder="number or word">
         <span class="key-readout" id="keyReadout"></span>
       </label>
+    </section>
+
+    <section class="options">
+      <span class="opt-label" data-i18n="version">Version</span>
+      <div class="seg seg-sm" id="version" role="radiogroup" data-i18n-aria="version" aria-label="Version">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <button type="button" role="radio" data-value="1" data-i18n-title="v1Title">V1</button>
+        <button type="button" role="radio" data-value="2" data-i18n-title="v2Title">V2</button>
+      </div>
+      <div class="flags" id="flags">
+        <button type="button" class="flag" id="clusters" aria-pressed="false" data-i18n-title="clustersTitle">
+          <span class="led" aria-hidden="true"></span><span data-i18n="clusters">Clusters</span>
+        </button>
+        <button type="button" class="flag" id="rhythm" aria-pressed="false" data-i18n-title="rhythmTitle">
+          <span class="led" aria-hidden="true"></span><span data-i18n="rhythm">Rhythm</span>
+        </button>
+      </div>
+      <span class="opt-hint" id="versionHint"></span>
     </section>
 
     <main class="workbench">

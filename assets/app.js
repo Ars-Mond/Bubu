@@ -18,6 +18,16 @@
       keyVigenere: (n) => `vigenère · ${n}`,
       keyBad: "invalid",
       keyInvalid: "The key must be a number (Caesar shift) or a word made of Russian or English letters.",
+      keyInvalidV2: "In version 2 the key must be a number or a word made of Russian letters.",
+      version: "Version",
+      v1Title: "Version 1 — classic: letter pairs → syllables. Russian and English.",
+      v2Title: "Version 2 — cute: soft syllables with tails. Russian only.",
+      clusters: "Clusters",
+      clustersTitle: "Add easy clusters: пр, бр, тр, кл, пл",
+      rhythm: "Rhythm",
+      rhythmTitle: "Chunks of 2–3 syllables, like a song",
+      hint1: "classic · Russian and English",
+      hint2: "cute · Russian only: пан, бум, пиу, мяу",
       plainTitle: "Text",
       cipherTitle: "Cipher",
       clear: "Clear",
@@ -30,11 +40,11 @@
       count: (n) => `${n} chars`,
       privacy: "Everything runs in your browser. The text never leaves this page.",
       howTitle: "How it works",
-      how1: "Each word is split into letter pairs. Letters are ranked by frequency, so pairs of common letters get small numbers.",
-      how2: "Every number becomes a syllable: consonant + vowel, or two consonants + vowel for larger numbers.",
-      how3: "Each word keeps its script: Russian words turn into Cyrillic syllables, English words into Latin ones. Each language has its own letter frequencies.",
-      how4: "The optional key shifts consonants: a number is a Caesar shift, a word is a Vigenère key (a = 0, b = 1, …; а = 0, б = 1, …).",
-      how5: "Output is fully compatible with the bubu_cipher.py script.",
+      how1: "Version 1 (classic): a word is split into letter pairs, each pair gets a number, and the number becomes a “consonant + vowel” or “two consonants + vowel” syllable. Common pairs get short syllables. English words turn into Latin syllables.",
+      how2: "Version 2 (cute): soft syllables with tails — пан, бум, пиу, мяу. Every three symbols become two syllables, common triples the shortest ones. Capital letters are preserved. Russian text only.",
+      how3: "“Clusters” adds easy clusters пр, бр, тр, кл, пл. “Rhythm” encodes spaces together with the words and splits the result into chunks of 2–3 syllables, like a song.",
+      how4: "Optional key: a number is a shift, a word is a Vigenère key (а = 0, б = 1, …). In version 1 the key word can also be English.",
+      how5: "Decrypting needs the same version, switches and key. Russian text is encoded exactly like the bubu_cipher.py script does.",
       failed: "Could not decrypt.",
       whereChar: (c) => `Character ${c}`,
       whereLine: (l, c) => `Line ${l}, character ${c}`,
@@ -46,8 +56,15 @@
         tail: (f) => `the word ends with “${f}”, but every syllable must end with a vowel.`,
         range: (f) => `the syllable “${f}” does not match any pair of letters.`,
         marker: (f) => `the syllable “${f}” can only stand at the end of a word.`,
+        syllable: (f) => `“${f}” does not form a syllable.`,
+        end: (f) => `a word cannot end with “${f}”.`,
+        pair: (f) => `the syllables “${f}” mean nothing.`,
+        single: (f) => `the syllable “${f}” means nothing.`,
+        early: (f) => `the syllables “${f}” can only stand at the end of a word.`,
+        sequence: (f) => `the syllables “${f}” do not add up to text.`,
       },
       checkKey: "Check the key.",
+      checkSettings: "Check the version, switches and key.",
     },
     ru: {
       title: "Бубу — шуточный шифр",
@@ -65,6 +82,16 @@
       keyVigenere: (n) => `виженер · ${n}`,
       keyBad: "ошибка",
       keyInvalid: "Ключ должен быть числом (сдвиг Цезаря) или словом из русских или английских букв.",
+      keyInvalidV2: "В версии 2 ключ должен быть числом или словом из русских букв.",
+      version: "Версия",
+      v1Title: "Версия 1 — классика: пары букв → слоги. Русский и английский.",
+      v2Title: "Версия 2 — милота: мягкие слоги с хвостиками. Только русский.",
+      clusters: "Сочетания",
+      clustersTitle: "Добавить лёгкие сочетания: пр, бр, тр, кл, пл",
+      rhythm: "Ритм",
+      rhythmTitle: "Куски по 2–3 слога, как в песне",
+      hint1: "классика · русский и английский",
+      hint2: "милота · только русский: пан, бум, пиу, мяу",
       plainTitle: "Текст",
       cipherTitle: "Шифр",
       clear: "Очистить",
@@ -77,11 +104,11 @@
       count: (n) => `символов: ${n}`,
       privacy: "Всё считается прямо в браузере — текст никуда не отправляется.",
       howTitle: "Как это работает",
-      how1: "Слово делится на пары букв. Буквы упорядочены по частоте, поэтому пары частых букв получают маленькие номера.",
-      how2: "Каждый номер превращается в слог: согласная + гласная, а для больших номеров — две согласные + гласная.",
-      how3: "Каждое слово остаётся в своём алфавите: русские слова превращаются в кириллические слоги, английские — в латинские. У каждого языка своя таблица частот.",
-      how4: "Необязательный ключ сдвигает согласные: число — это сдвиг Цезаря, слово — ключ Виженера (а = 0, б = 1, …; a = 0, b = 1, …).",
-      how5: "Результат полностью совместим со скриптом bubu_cipher.py.",
+      how1: "Версия 1 (классика): слово делится на пары букв, каждая пара получает номер, а номер становится слогом «согласная + гласная» или «две согласные + гласная». Частые пары — короткие слоги. Английские слова превращаются в латинские слоги.",
+      how2: "Версия 2 (милота): мягкие слоги с хвостиками — пан, бум, пиу, мяу. Каждые три символа становятся двумя слогами, частые тройки — самыми короткими. Заглавные буквы сохраняются. Только русский текст.",
+      how3: "«Сочетания» добавляют лёгкие сочетания пр, бр, тр, кл, пл. «Ритм» шифрует пробелы вместе со словами и разбивает результат на куски по 2–3 слога, как песню.",
+      how4: "Необязательный ключ: число — это сдвиг, слово — ключ Виженера (а = 0, б = 1, …). В версии 1 ключ-слово может быть и английским.",
+      how5: "Для расшифровки нужны те же версия, переключатели и ключ. Русский текст шифруется точно так же, как скриптом bubu_cipher.py.",
       failed: "Не удалось расшифровать.",
       whereChar: (c) => `Символ ${c}`,
       whereLine: (l, c) => `Строка ${l}, символ ${c}`,
@@ -93,8 +120,15 @@
         tail: (f) => `слово обрывается на «${f}», а каждый слог должен заканчиваться гласной.`,
         range: (f) => `слог «${f}» не соответствует ни одной паре букв.`,
         marker: (f) => `слог «${f}» может стоять только в конце слова.`,
+        syllable: (f) => `«${f}» не складывается в слог.`,
+        end: (f) => `слово не может заканчиваться на «${f}».`,
+        pair: (f) => `слоги «${f}» ничего не означают.`,
+        single: (f) => `слог «${f}» ничего не означает.`,
+        early: (f) => `слоги «${f}» могут стоять только в конце слова.`,
+        sequence: (f) => `слоги «${f}» не складываются в текст.`,
       },
       checkKey: "Проверьте ключ.",
+      checkSettings: "Проверьте версию, переключатели и ключ.",
     },
   };
 
@@ -103,7 +137,9 @@
   const output = $("output");
   const keyInput = $("key");
   const keyReadout = $("keyReadout");
-  const modeGroup = document.querySelector(".mode");
+  const modeGroup = $("mode");
+  const versionGroup = $("version");
+  const flagButtons = { clusters: $("clusters"), rhythm: $("rhythm") };
   const copyBtn = $("copy");
   const swapBtn = $("swap");
 
@@ -118,11 +154,14 @@
 
   let lang = document.documentElement.lang === "ru" ? "ru" : "en";
   let mode = store.get("mode") === "dec" ? "dec" : "enc";
+  let version = store.get("version") === "1" ? 1 : 2;
+  const flags = { clusters: store.get("clusters") === "1", rhythm: store.get("rhythm") === "1" };
   let hasResult = false;
   let turns = 0;
   let copyTimer = 0;
 
   const t = () => STRINGS[lang];
+  const settings = (key) => ({ version, key: key || undefined, clusters: flags.clusters, rhythm: flags.rhythm });
 
   // ---------- conversion ----------
 
@@ -139,13 +178,15 @@
     const fragment = src.substr(err.index, err.length);
 
     let msg = `${s.failed}\n${where}, ${s.inWord(word)}: ${s.reasons[err.code](fragment)}`;
-    if (key.kind !== "none" && (err.code === "range" || err.code === "marker")) msg += " " + s.checkKey;
+    // Hint at the settings when the syllables are fine but mean nothing with them.
+    if (["pair", "single", "early", "sequence"].includes(err.code)) msg += " " + s.checkSettings;
+    else if (key.kind !== "none" && (err.code === "range" || err.code === "marker")) msg += " " + s.checkKey;
     return msg;
   }
 
   function convert(src, key) {
-    if (mode === "enc") return { text: Bubu.encode(src, key.shifts) };
-    const r = Bubu.decode(src, key.shifts);
+    if (mode === "enc") return { text: Bubu.encode(src, settings(key)) };
+    const r = Bubu.decode(src, settings(key));
     return r.error ? { message: describeError(r.error, src, key) } : { text: r.text };
   }
 
@@ -161,20 +202,20 @@
   function update() {
     const s = t();
     const src = input.value;
-    const key = Bubu.parseKey(keyInput.value);
+    const key = Bubu.parseKey(keyInput.value, version);
     renderKey(key);
 
-    // Placeholders double as a live example of the current mode and key.
-    const shifts = key ? key.shifts : [0];
-    const sampleCipher = Bubu.encode(s.sample, shifts);
-    input.placeholder = mode === "enc" ? s.sample : sampleCipher;
-    output.placeholder = mode === "enc" ? sampleCipher : s.sample;
+    // Placeholders double as a live example of the current settings; v2 is Russian only.
+    const sample = version === 2 ? STRINGS.ru.sample : s.sample;
+    const sampleCipher = Bubu.encode(sample, settings(key));
+    input.placeholder = mode === "enc" ? sample : sampleCipher;
+    output.placeholder = mode === "enc" ? sampleCipher : sample;
 
     hasResult = false;
     if (!src) {
       output.value = "";
     } else if (!key) {
-      output.value = s.keyInvalid;
+      output.value = version === 2 ? s.keyInvalidV2 : s.keyInvalid;
     } else {
       const r = convert(src, key);
       output.value = r.text !== undefined ? r.text : r.message;
@@ -189,18 +230,58 @@
     store.set("key", keyInput.value);
   }
 
-  // ---------- mode, language ----------
+  // ---------- switches ----------
+
+  function setSeg(group, value) {
+    const buttons = [...group.querySelectorAll("button[data-value]")];
+    buttons.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.value === value)));
+    group.dataset.index = String(buttons.findIndex((b) => b.dataset.value === value));
+  }
+
+  // Click picks an option; arrow keys move to the other one.
+  function bindSeg(group, onPick) {
+    const buttons = [...group.querySelectorAll("button[data-value]")];
+    group.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-value]");
+      if (b) onPick(b.dataset.value);
+    });
+    group.addEventListener("keydown", (e) => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+      e.preventDefault();
+      const next = buttons.find((b) => b.getAttribute("aria-checked") !== "true");
+      onPick(next.dataset.value);
+      next.focus();
+    });
+  }
 
   function setMode(next) {
     mode = next;
-    modeGroup.dataset.mode = mode;
-    modeGroup.querySelectorAll("button").forEach((b) => {
-      b.setAttribute("aria-checked", String(b.dataset.mode === mode));
-    });
+    setSeg(modeGroup, mode);
     const s = t();
     $("inTitle").textContent = mode === "enc" ? s.plainTitle : s.cipherTitle;
     $("outTitle").textContent = mode === "enc" ? s.cipherTitle : s.plainTitle;
     store.set("mode", mode);
+    update();
+  }
+
+  function renderOptions() {
+    setSeg(versionGroup, String(version));
+    $("flags").hidden = version !== 2;
+    for (const [name, b] of Object.entries(flagButtons)) b.setAttribute("aria-pressed", String(flags[name]));
+    $("versionHint").textContent = version === 2 ? t().hint2 : t().hint1;
+  }
+
+  function setVersion(next) {
+    version = next;
+    store.set("version", String(version));
+    renderOptions();
+    update();
+  }
+
+  function toggleFlag(name) {
+    flags[name] = !flags[name];
+    store.set(name, flags[name] ? "1" : "0");
+    renderOptions();
     update();
   }
 
@@ -226,6 +307,7 @@
     });
     $("logo").textContent = s.logo;
     store.set("lang", lang);
+    renderOptions();
     setMode(mode);
   }
 
@@ -256,18 +338,15 @@
     return Promise.resolve();
   }
 
-  modeGroup.addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-mode]");
-    if (b && b.dataset.mode !== mode) setMode(b.dataset.mode);
+  bindSeg(modeGroup, (value) => {
+    if (value !== mode) setMode(value);
   });
 
-  modeGroup.addEventListener("keydown", (e) => {
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
-      e.preventDefault();
-      setMode(mode === "enc" ? "dec" : "enc");
-      modeGroup.querySelector(`[data-mode="${mode}"]`).focus();
-    }
+  bindSeg(versionGroup, (value) => {
+    if (Number(value) !== version) setVersion(Number(value));
   });
+
+  for (const [name, b] of Object.entries(flagButtons)) b.addEventListener("click", () => toggleFlag(name));
 
   document.querySelectorAll("[data-lang]").forEach((b) => {
     b.addEventListener("click", () => {

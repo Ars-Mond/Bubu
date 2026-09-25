@@ -193,7 +193,8 @@ input:focus-visible {
   gap: 14px;
 }
 
-.mode {
+/* Two-option segmented switch with a sliding thumb. */
+.seg {
   position: relative;
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
@@ -203,7 +204,7 @@ input:focus-visible {
   background: rgba(8, 12, 19, 0.65);
 }
 
-.mode button {
+.seg button {
   position: relative;
   z-index: 1;
   padding: 12px 22px;
@@ -214,15 +215,15 @@ input:focus-visible {
   transition: color 0.25s;
 }
 
-.mode button:hover {
+.seg button:hover {
   color: var(--text);
 }
 
-.mode button[aria-checked="true"] {
+.seg button[aria-checked="true"] {
   color: #dcfcff;
 }
 
-.mode-thumb {
+.seg-thumb {
   position: absolute;
   top: 4px;
   bottom: 4px;
@@ -235,8 +236,14 @@ input:focus-visible {
   transition: transform 0.4s var(--ease);
 }
 
-.mode[data-mode="dec"] .mode-thumb {
+.seg[data-index="1"] .seg-thumb {
   transform: translateX(100%);
+}
+
+.seg-sm button {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 11px;
 }
 
 .key {
@@ -293,6 +300,89 @@ input:focus-visible {
 .key-readout[data-kind="vigenere"] {
   color: var(--accent);
   border-color: rgba(98, 243, 255, 0.3);
+}
+
+/* ---------- version and v2 switches ---------- */
+
+.options {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+
+.opt-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.flags {
+  display: flex;
+  gap: 8px;
+  animation: flags-in 0.35s var(--ease);
+}
+
+.flags[hidden] {
+  display: none;
+}
+
+@keyframes flags-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+/* Latching switch: stays pressed in, with a lit indicator, while on. */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: rgba(8, 12, 19, 0.65);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.flag:hover {
+  color: var(--text);
+  border-color: rgba(169, 139, 255, 0.4);
+}
+
+.flag .led {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--faint);
+  opacity: 0.6;
+  transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.flag[aria-pressed="true"] {
+  color: #efe8ff;
+  border-color: rgba(169, 139, 255, 0.6);
+  background: linear-gradient(180deg, rgba(169, 139, 255, 0.07), rgba(169, 139, 255, 0.17));
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55), 0 0 18px -6px rgba(169, 139, 255, 0.6);
+}
+
+.flag[aria-pressed="true"] .led {
+  background: var(--accent-2);
+  opacity: 1;
+  box-shadow: 0 0 8px var(--accent-2), 0 0 2px #fff;
+}
+
+.opt-hint {
+  font-size: 12px;
+  color: var(--faint);
 }
 
 /* ---------- workbench ---------- */
@@ -637,7 +727,11 @@ textarea::placeholder {
     animation: none;
   }
 
-  .mode-thumb,
+  .flags {
+    animation: none;
+  }
+
+  .seg-thumb,
   .swap svg {
     transition: none;
   }
