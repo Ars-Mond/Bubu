@@ -1,0 +1,17 @@
+# Local tooling
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" class="booting">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#06080c">
+  <meta name="description" content="Bubu: a joke cipher that turns Russian text into pronounceable gibberish and back. Runs entirely in the browser.">
+  <title>Bubu cipher</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='6' width='20' height='20' transform='rotate(45 16 16)' fill='none' stroke='%2362f3ff' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%23a98bff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@400;600;800&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // Pick the UI language before first paint; app.js applies the strings and drops .booting.
+    (function () {
+      var lang = null;
+      try { lang = localStorage.getItem("bubu.lang"); } catch (e) {}
+      if (lang !== "ru" && lang !== "en") {
+        lang = /^(ru|be|uk|kk)\b/i.test(navigator.language || "") ? "ru" : "en";
+      }
+      document.documentElement.lang = lang;
+      setTimeout(function () { document.documentElement.classList.remove("booting"); }, 1500);
+    })();
+  </script>
+  <noscript><style>html.booting body { opacity: 1; }</style></noscript>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <p class="kicker"><span class="kicker-mark">//</span> <span data-i18n="kicker">joke cipher for Russian text</span></p>
+        <h1 class="logo" id="logo" aria-label="Bubu">BUBU</h1>
+        <p class="tagline" data-i18n="tagline">Turns Russian text into pronounceable gibberish and back.</p>
+      </div>
+      <nav class="lang" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button>
+        <span aria-hidden="true">/</span>
+        <button type="button" data-lang="en">EN</button>
+      </nav>
+    </header>
+
+    <section class="controls">
+      <div class="mode" role="radiogroup" data-i18n-aria="modeLabel" aria-label="Mode">
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <button type="button" role="radio" data-mode="enc" data-i18n="encrypt">Encrypt</button>
+        <button type="button" role="radio" data-mode="dec" data-i18n="decrypt">Decrypt</button>
+      </div>
+
+      <label class="key">
+        <span class="key-label" data-i18n="key">Key</span>
+        <input id="key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+               data-i18n-placeholder="keyPlaceholder" placeholder="number or word">
+        <span class="key-readout" id="keyReadout"></span>
+      </label>
+    </section>
+
+    <main class="workbench">
+      <section class="panel" id="inPanel">
+        <header class="panel-head">
+          <span class="panel-title"><span class="panel-idx">01</span> <span id="inTitle"></span></span>
+          <button type="button" class="tool" id="clear" data-i18n="clear">Clear</button>
+        </header>
+        <textarea id="input" spellcheck="false" data-i18n-aria="inputLabel" aria-label="Input"></textarea>
+        <footer class="panel-foot"><span id="inCount"></span></footer>
+      </section>
+
+      <div class="swap-wrap">
+        <button type="button" class="swap" id="swap" data-i18n-aria="swap" data-i18n-title="swap" aria-label="Swap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4"/></svg>
+        </button>
+      </div>
+
+      <section class="panel panel-out" id="outPanel">
+        <header class="panel-head">
+          <span class="panel-title"><span class="panel-idx">02</span> <span id="outTitle"></span></span>
+          <span class="panel-tools">
+            <span class="live"><span class="live-dot" aria-hidden="true"></span><span data-i18n="live">auto</span></span>
+            <button type="button" class="tool" id="copy" data-i18n="copy">Copy</button>
+          </span>
+        </header>
+        <textarea id="output" readonly spellcheck="false" data-i18n-aria="outputLabel" aria-label="Result"></textarea>
+        <footer class="panel-foot"><span id="outCount"></span></footer>
+      </section>
+    </main>
+
+    <footer class="bottom">
+      <p data-i18n="privacy">Everything runs in your browser. The text never leaves this page.</p>
+      <details class="how">
+        <summary data-i18n="howTitle">How it works</summary>
+        <ol>
+          <li data-i18n="how1"></li>
+          <li data-i18n="how2"></li>
+          <li data-i18n="how3"></li>
+          <li data-i18n="how4"></li>
+        </ol>
+      </details>
+    </footer>
+  </div>
+
+  <script src="assets/cipher.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
